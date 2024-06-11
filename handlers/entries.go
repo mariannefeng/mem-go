@@ -12,8 +12,7 @@ import (
 
 type CreateEntry struct {
 	db *sql.DB
-
-	q *db.Queries
+	q  *db.Queries
 }
 
 func NewEntryHandler(db *sql.DB, q *db.Queries) *CreateEntry {

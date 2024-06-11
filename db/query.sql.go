@@ -10,6 +10,22 @@ import (
 	"database/sql"
 )
 
+const createBook = `-- name: CreateBook :one
+INSERT INTO book (
+  name
+) VALUES (
+  $1
+)
+RETURNING id, name, created_at
+`
+
+func (q *Queries) CreateBook(ctx context.Context, name string) (Book, error) {
+	row := q.db.QueryRowContext(ctx, createBook, name)
+	var i Book
+	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const createEntry = `-- name: CreateEntry :one
 INSERT INTO entry (
   book_id, type, content, key
@@ -70,6 +86,34 @@ func (q *Queries) GetBook(ctx context.Context, id int32) (Book, error) {
 	var i Book
 	err := row.Scan(&i.ID, &i.Name, &i.CreatedAt)
 	return i, err
+}
+
+const getBooks = `-- name: GetBooks :many
+SELECT id, name, created_at FROM book
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetBooks(ctx context.Context) ([]Book, error) {
+	rows, err := q.db.QueryContext(ctx, getBooks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Book
+	for rows.Next() {
+		var i Book
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getEntriesByBook = `-- name: GetEntriesByBook :many
